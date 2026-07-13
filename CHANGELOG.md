@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 (fork)
+- [Compatibility] Fixed `Characteristic.Formats` / `Characteristic.Units` / `Characteristic.Perms` usage in the custom Eve characteristics (`src/accessory.js`). These enums were removed from the `Characteristic` class in HAP-NodeJS v1+ (used by Homebridge v2); they are now read from `hap` instead, exposed as `global.Formats` / `global.Units` / `global.Perms` in `index.js`.
+- [Compatibility] Updated `engines.homebridge` to `^1.6.0 || ^2.0.0` and `engines.node` to `^22.12.0 || ^24.0.0` so Homebridge correctly reports this build as v2-ready.
+- [Docs] Rewrote the README warning banner and badges to reflect that this is a personal fork, and fixed the installation instructions, which previously pointed to the original (unmaintained) `homebridge-people-pro` npm package instead of this fork.
+- [Improvement] Added a `displayName` ("People Pro V2") so the plugin is easier to tell apart from the original in the Homebridge UI. The npm package name and the `PeoplePro` platform identifier in `config.json` are unchanged.
+
 ## 0.11.5
 - [Security] Bumped `get-ip-range` to `^4.0.0` due to dependabot security alert (DoS)
 ## 0.11.4
