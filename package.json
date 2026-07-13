@@ -1,7 +1,7 @@
 {
   "name": "homebridge-people-pro",
   "displayName": "People Pro V2",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Homebridge plugin that provides details of who is in a Home + History (powered by fakegato)",
   "license": "MIT",
   "keywords": [
@@ -16,7 +16,7 @@
     "homebridge": "^1.6.0 || ^2.0.0"
   },
   "dependencies": {
-    "fakegato-history": "^0.5.0",
+    "fakegato-history": "^0.6.7",
     "local-devices": "^3.1.0",
     "moment": "^2.11.2",
     "node-arp": "^1.0.6",
@@ -41,4 +41,3 @@
     }
   ]
 }
-
