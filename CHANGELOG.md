@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.12.1 (fork)
+- [Bug] Fixed a crash on startup under Homebridge v2: `TypeError: Cannot read properties of undefined (reading 'DATA')` thrown from `fakegato-history`'s `S2R1Characteristic`. The bundled `fakegato-history@0.5.0` reads the old, removed `Characteristic.Formats` enum internally, same root cause as the fix in 0.12.0, just inside a dependency instead of our own code. Bumped `fakegato-history` from `^0.5.0` to `^0.6.7`, which reads `Formats` from `homebridge.hap` and no longer touches the removed enum. No code changes needed on our side; `package-lock.json` updated accordingly.
+
 ## 0.12.0 (fork)
 - [Compatibility] Fixed `Characteristic.Formats` / `Characteristic.Units` / `Characteristic.Perms` usage in the custom Eve characteristics (`src/accessory.js`). These enums were removed from the `Characteristic` class in HAP-NodeJS v1+ (used by Homebridge v2); they are now read from `hap` instead, exposed as `global.Formats` / `global.Units` / `global.Perms` in `index.js`.
 - [Compatibility] Updated `engines.homebridge` to `^1.6.0 || ^2.0.0` and `engines.node` to `^22.12.0 || ^24.0.0` so Homebridge correctly reports this build as v2-ready.
@@ -47,3 +50,4 @@
 - [Feature] Added "pingUseArp" configuration
 - [Code] Added ESLint for better code style
 - [Code] Refactored complete codebase
+odebase
