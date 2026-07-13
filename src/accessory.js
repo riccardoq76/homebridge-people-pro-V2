@@ -48,11 +48,11 @@ class PeopleProAccessory {
         constructor() {
           super('LastActivation', 'E863F11A-079E-48FF-8F27-9C2605A29F52');
           this.setProps({
-            format: Characteristic.Formats.UINT32,
-            unit: Characteristic.Units.SECONDS,
+            format: Formats.UINT32,
+            unit: Units.SECONDS,
             perms: [
-              Characteristic.Perms.READ,
-              Characteristic.Perms.NOTIFY,
+              Perms.READ,
+              Perms.NOTIFY,
             ],
           });
         }
@@ -62,8 +62,8 @@ class PeopleProAccessory {
         constructor() {
           super('Duration', 'E863F12D-079E-48FF-8F27-9C2605A29F52');
           this.setProps({
-            format: Characteristic.Formats.UINT16,
-            unit: Characteristic.Units.SECONDS,
+            format: Formats.UINT16,
+            unit: Units.SECONDS,
             minValue: 5,
             maxValue: 15 * 3600,
             validValues: [
@@ -72,9 +72,9 @@ class PeopleProAccessory {
               1 * 3600, 2 * 3600, 3 * 3600, 5 * 3600, 10 * 3600, 12 * 3600, 15 * 3600,
             ],
             perms: [
-              Characteristic.Perms.READ,
-              Characteristic.Perms.NOTIFY,
-              Characteristic.Perms.WRITE,
+              Perms.READ,
+              Perms.NOTIFY,
+              Perms.WRITE,
             ],
           });
         }
@@ -84,14 +84,14 @@ class PeopleProAccessory {
         constructor() {
           super('Sensitivity', 'E863F120-079E-48FF-8F27-9C2605A29F52');
           this.setProps({
-            format: Characteristic.Formats.UINT8,
+            format: Formats.UINT8,
             minValue: 0,
             maxValue: 7,
             validValues: [0, 4, 7],
             perms: [
-              Characteristic.Perms.READ,
-              Characteristic.Perms.NOTIFY,
-              Characteristic.Perms.WRITE,
+              Perms.READ,
+              Perms.NOTIFY,
+              Perms.WRITE,
             ],
           });
         }
