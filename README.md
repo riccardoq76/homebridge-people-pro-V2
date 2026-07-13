@@ -6,12 +6,12 @@
 
 # homebridge-people-pro
 
-[![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins) [![npm](https://img.shields.io/npm/v/homebridge-people-pro.svg)](https://www.npmjs.com/package/homebridge-people-pro) [![npm](https://img.shields.io/npm/dt/homebridge-people-pro.svg)](https://www.npmjs.com/package/homebridge-people-pro) [![github](https://img.shields.io/github/last-commit/mfkrause/homebridge-people-pro)](https://www.github.com/mfkrause/homebridge-people-pro)
+[![github](https://img.shields.io/github/last-commit/riccardoq76/homebridge-people-pro)](https://www.github.com/riccardoq76/homebridge-people-pro)
 
 </span>
 
-> [!WARNING]
-> I have stopped using Homebridge and migrated my own setup to Home Assistant. I'm therefore unable to continue support for this library. It's feature-complete and should work as-is, but I can't guarantee compatibility with future versions of Homebridge. Feel free to fork it and continue working on it!
+> [!NOTE]
+> This is a personal fork of [mfkrause/homebridge-people-pro](https://github.com/mfkrause/homebridge-people-pro), which the original author archived after moving away from Homebridge. This fork applies the minimal changes needed to keep the plugin working on Homebridge v2 (see [CHANGELOG.md](CHANGELOG.md)). It is not published to npm; install it directly from this repository (see Installation below).
 
 This is a plugin for [homebridge](https://github.com/homebridge/homebridge). It monitors who is at home, based on their smartphone being seen on the network recently.
 If you use the Elgato Eve app you can also see the history of every person sensor (powered by [fakegato](https://github.com/simont77/fakegato-history]) - only works for sensors configured as "motion" sensors).
@@ -21,7 +21,8 @@ It can also optionally spin up a webserver and receive webhooks sent by location
 # Installation
 
 1.  Install homebridge (if not already installed) using: `npm install -g homebridge`
-2.  Install this plugin using: `npm install -g homebridge-people-pro`
+2.  Install this fork directly from GitHub using: `npm install -g github:riccardoq76/homebridge-people-pro`
+    (this plugin is not published on npm, so `npm install -g homebridge-people-pro` would install the original, unmaintained package instead of this fork)
 3.  Update your configuration file (see below).
 
 # Configuration
