@@ -41,6 +41,7 @@ See `config-sample.json` for an example configuration. This plugin can also be c
 | `nooneSensorType`          | optional, default: "motion", can be one of "motion", "occupancy".                                                                                                                                   |
 | `webhookEnabled`           | optional, default: false, enable webhook functionality / webserver                                                                                                                                  |
 | `webhookPort`              | optional, default: 51828                                                                                                                                                                            |
+| `webhookToken`             | optional, default: none. **Strongly recommended if `webhookEnabled` is true.** If set, every webhook request must include a matching `token` query parameter, or it is rejected. Without it, anyone who can reach the webhook port can spoof presence for your sensors. |
 | `people`                   | array of objects of the sensors / people to set-up, see below for configuration of every sensor                                                                                                     |
 
 ## Sensors / People Configuration
@@ -85,6 +86,8 @@ Additionally, if you're using a location-aware mobile app to range for iBeacons 
 Apps like [Locative](https://my.locative.io) range for iBeacons and geofences by using core location APIs available on your smartphone. With Bluetooth and location services turned on, these apps can provide an instantaneous update when you enter and exit a desired region.
 
 To use this plugin with one of these apps, configure your region and set the HTTP push to `http://[ipaddress]:[port]/?sensor=[name]&state=true` for arrival, and `http://[ipaddress]:[port]/?sensor=[name]&state=false` for departure, where `[ipaddress]` is the IP address of your Homebridge, `[port]` the configured port for the webhooks (defaults to 51828) and `[name]` the name of the person the device belongs to as specified in your config under `people`. *Note:* You may need to enable port forwarding on your router to accomplish this.
+
+If you have set `webhookToken` in your config (recommended), append `&token=[token]` to both URLs, e.g. `http://[ipaddress]:[port]/?sensor=[name]&state=true&token=[token]`. Requests without a matching token are rejected. This matters especially if you have port-forwarded the webhook port to the internet for Locative to reach it while you're away from home - without a token, anyone who finds that port can fake your presence at home.
 
 # Notes
 

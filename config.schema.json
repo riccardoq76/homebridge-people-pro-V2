@@ -25,8 +25,18 @@
                 "type": "string",
                 "default": "motion",
                 "oneOf": [
-                { "title": "Motion Sensor", "enum": ["motion"] },
-                { "title": "Occupancy Sensor", "enum": ["occupancy"] }
+                    {
+                        "title": "Motion Sensor",
+                        "enum": [
+                            "motion"
+                        ]
+                    },
+                    {
+                        "title": "Occupancy Sensor",
+                        "enum": [
+                            "occupancy"
+                        ]
+                    }
                 ],
                 "required": true,
                 "condition": {
@@ -53,8 +63,18 @@
                 "type": "string",
                 "default": "motion",
                 "oneOf": [
-                { "title": "Motion Sensor", "enum": ["motion"] },
-                { "title": "Occupancy Sensor", "enum": ["occupancy"] }
+                    {
+                        "title": "Motion Sensor",
+                        "enum": [
+                            "motion"
+                        ]
+                    },
+                    {
+                        "title": "Occupancy Sensor",
+                        "enum": [
+                            "occupancy"
+                        ]
+                    }
                 ],
                 "required": true,
                 "condition": {
@@ -78,6 +98,15 @@
                     "functionBody": "return model.webhookEnabled === true;"
                 }
             },
+            "webhookToken": {
+                "type": "string",
+                "title": "Webhook token (recommended)",
+                "required": false,
+                "description": "Optional shared secret. If set, webhook requests must include a matching \"token\" query parameter (http://[ip]:[port]/?sensor=[name]&state=true&token=[token]), otherwise they are rejected. Strongly recommended, especially if the webhook port is reachable from outside your home network.",
+                "condition": {
+                    "functionBody": "return model.webhookEnabled === true;"
+                }
+            },
             "people": {
                 "type": "array",
                 "title": "People / Sensors",
@@ -90,7 +119,7 @@
                     "description": "A person / target to set-up as a sensor.",
                     "properties": {
                         "name": {
-                           "type": "string",
+                            "type": "string",
                             "title": "Sensor Name",
                             "required": true
                         },
@@ -127,8 +156,18 @@
                             "default": "motion",
                             "description": "Warning! Choosing something else than \"Motion Sensor\" will disable Fakegato / Elgato Eve History support.",
                             "oneOf": [
-                            { "title": "Motion Sensor", "enum": ["motion"] },
-                            { "title": "Occupancy Sensor", "enum": ["occupancy"] }
+                                {
+                                    "title": "Motion Sensor",
+                                    "enum": [
+                                        "motion"
+                                    ]
+                                },
+                                {
+                                    "title": "Occupancy Sensor",
+                                    "enum": [
+                                        "occupancy"
+                                    ]
+                                }
                             ],
                             "required": true
                         },

@@ -18,6 +18,7 @@ class PeopleProPlatform {
     this.nooneSensorName = config.nooneSensorName || 'No One';
     this.webhookPort = config.webhookPort || 51828;
     this.webhookEnabled = ((typeof (config.webhookEnabled) !== 'undefined' && config.webhookEnabled !== null) ? config.webhookEnabled : false);
+    this.webhookToken = config.webhookToken || null;
     this.pingInterval = config.pingInterval || 10000;
     this.ignoreWebhookReEnter = config.ignoreWebhookReEnter || 0;
     this.people = config.people || [];
@@ -84,7 +85,15 @@ class PeopleProPlatform {
         response.statusCode = 200;
         response.setHeader('Content-Type', 'application/json');
 
-        if (!theUrlParams.sensor || !theUrlParams.state) {
+        if (this.webhookToken && theUrlParams.token !== this.webhookToken) {
+          // Wrong or missing token - reject before revealing anything about configured sensors
+          response.statusCode = 401;
+          response.setHeader('Content-Type', 'text/plain');
+          const errorText = 'Webhook error: Missing or invalid token.';
+          this.log(errorText);
+          response.write(errorText);
+          response.end();
+        } else if (!theUrlParams.sensor || !theUrlParams.state) {
           // Received invalid request
           response.statusCode = 404;
           response.setHeader('Content-Type', 'text/plain');
@@ -127,6 +136,9 @@ class PeopleProPlatform {
       }));
     })).listen(this.webhookPort);
     this.log("Webhook: Started webserver on port '%s'.", this.webhookPort);
+    if (!this.webhookToken) {
+      this.log('Webhook: WARNING - no "webhookToken" configured. Anyone who can reach this webserver can spoof presence for your sensors. Set "webhookToken" in your config to require a shared secret on every webhook request.');
+    }
   }
 
   /**

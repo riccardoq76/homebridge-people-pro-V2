@@ -1,9 +1,9 @@
 const ping = require('ping');
-const util = require('util');
-const dns = require('dns');
-const moment = require('moment');
+const { Resolver } = require('dns');
 const arp = require('node-arp');
 const find = require('local-devices');
+
+const MAC_REGEX = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
 class PeopleProAccessory {
   constructor(log, config, platform) {
@@ -182,8 +182,8 @@ class PeopleProAccessory {
   getLastActivation(callback) {
     const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
     if (lastSeenUnix) {
-      const lastSeenMoment = moment(lastSeenUnix).unix();
-      callback(null, lastSeenMoment - this.historyService.getInitialTime());
+      const lastSeenSeconds = Math.floor(lastSeenUnix / 1000);
+      callback(null, lastSeenSeconds - this.historyService.getInitialTime());
     } else {
       callback(null, 0);
     }
@@ -214,75 +214,118 @@ class PeopleProAccessory {
   isActive() {
     const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
     if (lastSeenUnix) {
-      const lastSeenMoment = moment(lastSeenUnix);
-      const activeThreshold = moment().subtract(this.threshold, 'm');
-      return lastSeenMoment.isAfter(activeThreshold);
+      const activeThreshold = Date.now() - (this.threshold * 60 * 1000);
+      return lastSeenUnix > activeThreshold;
     }
     return false;
+  }
+
+  /**
+   * Resolves a hostname against this sensor's configured custom DNS server(s), without touching
+   * the process-wide default resolver (which dns.setServers() would do, affecting every other
+   * sensor / plugin running in the same Homebridge process).
+   * @param {string} hostname The hostname to resolve
+   * @returns {Promise<string>} The first resolved IPv4 address
+   */
+  resolveWithCustomDns(hostname) {
+    return new Promise((resolve, reject) => {
+      const resolver = new Resolver();
+      resolver.setServers(this.customDns);
+      resolver.resolve4(hostname, (err, addresses) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        if (!addresses || addresses.length === 0) {
+          reject(new Error(`No A records found for ${hostname}`));
+          return;
+        }
+        resolve(addresses[0]);
+      });
+    });
+  }
+
+  /**
+   * Looks up a MAC address via ARP to determine if it currently responds.
+   * @param {string} target The IP address or hostname to look up
+   * @returns {Promise<bool>} True if a valid MAC address was found, false if not
+   */
+  checkArp(target) {
+    return new Promise((resolve) => {
+      arp.getMAC(target, (err, mac) => {
+        resolve(!err && MAC_REGEX.test(mac));
+      });
+    });
+  }
+
+  /**
+   * Pings a target via ICMP.
+   * @param {string} target The IP address or hostname to ping
+   * @returns {Promise<bool>} True if the target responded, false if not
+   */
+  checkPing(target) {
+    return new Promise((resolve) => {
+      ping.sys.probe(target, (state) => {
+        resolve(state);
+      });
+    });
   }
 
   /**
    * Pings or, if configured, ARP lookups the target of this accessory/sensor and updated the state
    * accordingly. Gets called on a regular basis through an interval at the configured interval
    * time. If configured, looks up the given target hostname on a custom DNS server first.
+   *
+   * Regardless of how this run finishes (success, expected early exit, or unexpected error), the
+   * `finally` block always schedules the next run - a sensor must never permanently stop polling
+   * just because one cycle failed to resolve a MAC address or a DNS lookup.
    */
   async pingFunction() {
-    if (this.webhookIsOutdated()) {
-      let currentTarget = false;
-      if (/^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/.test(this.target)) {
-        // Target is MAC address - get IP first from arp
-        const devices = await find();
-        for (const device of devices) {
-          if (device.mac.toLowerCase() === this.target.toLowerCase()) {
-            currentTarget = device.ip;
-            break;
+    try {
+      if (this.webhookIsOutdated()) {
+        let currentTarget = false;
+        if (MAC_REGEX.test(this.target)) {
+          // Target is MAC address - get IP first from arp
+          const devices = await find();
+          for (const device of devices) {
+            if (device.mac.toLowerCase() === this.target.toLowerCase()) {
+              currentTarget = device.ip;
+              break;
+            }
           }
-        }
-      } else currentTarget = this.target;
+        } else currentTarget = this.target;
 
-      if (currentTarget === false) return; // Couldn't look up MAC address
-
-      if (this.customDns !== false) {
-        try {
-          dns.setServers(this.customDns);
-          const records = await util.promisify(dns.resolve)(currentTarget, 'A');
-          [currentTarget] = records;
-        } catch (e) {
-          this.log(`Error during DNS resolve using custom DNS server: ${e.getMessage()}`);
+        if (currentTarget === false) {
+          this.log(`Could not resolve MAC address ${this.target} to an IP on the network; will retry next cycle.`);
           return;
         }
-      }
-      if (this.pingUseArp) {
-        arp.getMAC(currentTarget, (err, mac) => {
-          let state = false;
-          if (!err && /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/.test(mac)) state = true;
 
-          if (this.webhookIsOutdated()) {
-            if (state) {
-              this.platform.storage.setItemSync(`lastSuccessfulPing_${this.target}`, Date.now());
-            }
-            if (this.successfulPingOccurredAfterWebhook()) {
-              const newState = this.isActive();
-              this.setNewState(newState);
-            }
+        if (this.customDns !== false) {
+          try {
+            currentTarget = await this.resolveWithCustomDns(currentTarget);
+          } catch (e) {
+            this.log(`Error during DNS resolve using custom DNS server: ${e.message}`);
+            return;
           }
-          setTimeout(this.pingFunction.bind(this), this.pingInterval);
-        });
-      } else {
-        ping.sys.probe(currentTarget, (state) => {
-          if (this.webhookIsOutdated()) {
-            if (state) {
-              this.platform.storage.setItemSync(`lastSuccessfulPing_${this.target}`, Date.now());
-            }
-            if (this.successfulPingOccurredAfterWebhook()) {
-              const newState = this.isActive();
-              this.setNewState(newState);
-            }
+        }
+
+        const state = this.pingUseArp
+          ? await this.checkArp(currentTarget)
+          : await this.checkPing(currentTarget);
+
+        if (this.webhookIsOutdated()) {
+          if (state) {
+            this.platform.storage.setItemSync(`lastSuccessfulPing_${this.target}`, Date.now());
           }
-          setTimeout(this.pingFunction.bind(this), this.pingInterval);
-        });
+          if (this.successfulPingOccurredAfterWebhook()) {
+            const newState = this.isActive();
+            this.setNewState(newState);
+          }
+        }
       }
-    } else {
+    } catch (e) {
+      this.log(`Unexpected error while checking status for ${this.target}: ${e.message}`);
+    } finally {
       setTimeout(this.pingFunction.bind(this), this.pingInterval);
     }
   }
@@ -294,9 +337,8 @@ class PeopleProAccessory {
   webhookIsOutdated() {
     const lastWebhookUnix = this.platform.storage.getItemSync(`lastWebhook_${this.target}`);
     if (lastWebhookUnix) {
-      const lastWebhookMoment = moment(lastWebhookUnix);
-      const activeThreshold = moment().subtract(this.threshold, 'm');
-      return lastWebhookMoment.isBefore(activeThreshold);
+      const activeThreshold = Date.now() - (this.threshold * 60 * 1000);
+      return lastWebhookUnix < activeThreshold;
     }
     return true;
   }
@@ -315,9 +357,7 @@ class PeopleProAccessory {
     if (!lastWebhook) {
       return true;
     }
-    const lastSuccessfulPingMoment = moment(lastSuccessfulPing);
-    const lastWebhookMoment = moment(lastWebhook);
-    return lastSuccessfulPingMoment.isAfter(lastWebhookMoment);
+    return lastSuccessfulPing > lastWebhook;
   }
 
   /**
@@ -344,27 +384,27 @@ class PeopleProAccessory {
         this.platform.peopleNoOneAccessory.refreshState();
       }
 
-      let lastSuccessfulPingMoment = 'none';
-      let lastWebhookMoment = 'none';
+      let lastSuccessfulPingFormatted = 'none';
+      let lastWebhookFormatted = 'none';
       const lastSuccessfulPing = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
       if (lastSuccessfulPing) {
-        lastSuccessfulPingMoment = moment(lastSuccessfulPing).format();
+        lastSuccessfulPingFormatted = new Date(lastSuccessfulPing).toISOString();
       }
       const lastWebhook = this.platform.storage.getItemSync(`lastWebhook_${this.target}`);
       if (lastWebhook) {
-        lastWebhookMoment = moment(lastWebhook).format();
+        lastWebhookFormatted = new Date(lastWebhook).toISOString();
       }
 
       if (this.type === 'motion') {
         this.historyService.addEntry({
-          time: moment().unix(),
+          time: Math.floor(Date.now() / 1000),
           status: (newState) ? 1 : 0,
         });
       }
       if (this.pingUseArp) {
-        this.log('Changed occupancy state for %s to %s. Last successful arp lookup %s , last webhook %s .', this.target, newState, lastSuccessfulPingMoment, lastWebhookMoment);
+        this.log('Changed occupancy state for %s to %s. Last successful arp lookup %s , last webhook %s .', this.target, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
       } else {
-        this.log('Changed occupancy state for %s to %s. Last successful ping %s , last webhook %s .', this.target, newState, lastSuccessfulPingMoment, lastWebhookMoment);
+        this.log('Changed occupancy state for %s to %s. Last successful ping %s , last webhook %s .', this.target, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
       }
     }
   }

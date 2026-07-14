@@ -1,34 +1,38 @@
 {
     "platform": "PeoplePro",
-    "anyoneSensor" : true,
-    "nooneSensor" : false,
+    "anyoneSensor": true,
+    "nooneSensor": false,
     "anyoneSensorName": "Anyone",
     "nooneSensorName": "No One",
     "webhookPort": 51828,
     "webhookEnabled": true,
-    "people" : [
+    "webhookToken": "change-me-to-a-long-random-string",
+    "people": [
         {
-            "name" : "Max",
-            "target" : "Max-iPhone",
-            "customDns": ["8.8.8.8", "8.8.4.4"],
-            "threshold" : 15,
+            "name": "Max",
+            "target": "Max-iPhone",
+            "customDns": [
+                "8.8.8.8",
+                "8.8.4.4"
+            ],
+            "threshold": 15,
             "pingInterval": 10000,
             "ignoreWebhookReEnter": 0,
             "pingUseArp": true,
             "type": "occupancy"
         },
         {
-            "name" : "Someone",
-            "target" : "192.168.1.68",
-            "threshold" : 15,
+            "name": "Someone",
+            "target": "192.168.1.68",
+            "threshold": 15,
             "pingInterval": 10000,
             "pingUseArp": false,
             "excludeFromWebhook": true
         },
         {
-            "name" : "Somebody",
-            "target" : "c4:81:e2:41:d5:56",
-            "threshold" : 15,
+            "name": "Somebody",
+            "target": "c4:81:e2:41:d5:56",
+            "threshold": 15,
             "pingInterval": 10000,
             "pingUseArp": false,
             "excludeFromWebhook": true

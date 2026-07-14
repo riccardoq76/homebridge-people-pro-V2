@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.13.0 (fork)
+- [Bug] Fixed a real reliability issue in `pingFunction()` (`src/accessory.js`): if a MAC-address target could not be found on the network, or a custom DNS lookup failed, the polling loop would silently stop forever for that sensor instead of retrying on the next cycle. The loop is now wrapped in `try`/`finally` so the next check is always scheduled, no matter how the current one ends.
+- [Bug] Fixed `e.getMessage()` (not a real method on JS `Error` objects) in the custom DNS error handler; it now correctly logs `e.message`.
+- [Bug] `dns.setServers()` mutated the process-wide default DNS resolver on every lookup, so multiple sensors configured with different custom DNS servers could interfere with each other. Custom DNS lookups now use a dedicated `dns.Resolver` instance per call instead.
+- [Security] Added an optional `webhookToken` config option. When set, webhook requests must include a matching `token` query parameter or are rejected with a 401. Previously the webhook endpoint had no authentication at all - anyone who could reach the port (including over the internet, if forwarded for Locative) could spoof any sensor's presence state. Existing setups keep working unchanged if `webhookToken` is left unset, but a startup log warning is now shown in that case.
+- [Improvement] Removed the `moment` dependency; all date/time handling in `src/accessory.js` now uses native `Date` arithmetic.
+- [Improvement] Removed the unused `request` dependency (deprecated, unmaintained, and not referenced anywhere in the codebase).
+
 ## 0.12.1 (fork)
 - [Bug] Fixed a crash on startup under Homebridge v2: `TypeError: Cannot read properties of undefined (reading 'DATA')` thrown from `fakegato-history`'s `S2R1Characteristic`. The bundled `fakegato-history@0.5.0` reads the old, removed `Characteristic.Formats` enum internally, same root cause as the fix in 0.12.0, just inside a dependency instead of our own code. Bumped `fakegato-history` from `^0.5.0` to `^0.6.7`, which reads `Formats` from `homebridge.hap` and no longer touches the removed enum. No code changes needed on our side; `package-lock.json` updated accordingly.
 
