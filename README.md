@@ -25,6 +25,22 @@ It can also optionally spin up a webserver and receive webhooks sent by location
     (this plugin is not published on npm, so `npm install -g homebridge-people-pro` would install the original, unmaintained package instead of this fork)
 3.  Update your configuration file (see below).
 
+**Note for my own Raspberry Pi setup:** on my instance, Homebridge (via Homebridge Config UI X / hb-service) manages plugins in its own storage directory rather than the system-wide global npm prefix. There, the working install/update command is instead (run over SSH on the Pi, as the `pi` user, no `-g`):
+
+```
+npm install --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro
+```
+
+If that fails with a permissions error, fall back to:
+
+```
+sudo npm install --unsafe-perm --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro
+```
+
+Then restart Homebridge (UI, or `sudo hb-service restart`).
+
+**Important:** because this plugin is installed from GitHub and not from npm, the Homebridge UI's "update available" indicator will never trigger for it - it only compares against the original, abandoned `homebridge-people-pro` package on npm (still at 0.11.6). Updates always have to be applied manually with the command above after pulling the latest changes into this fork.
+
 # Configuration
 
 See `config-sample.json` for an example configuration. This plugin can also be configured through a GUI like [homebridge-config-ui-x](https://github.com/oznu/homebridge-config-ui-x).
