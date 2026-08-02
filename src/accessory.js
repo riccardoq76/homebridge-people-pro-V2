@@ -51,7 +51,7 @@ class PeopleProAccessory {
             format: Formats.UINT32,
             unit: Units.SECONDS,
             perms: [
-              Perms.READ,
+              Perms.PAIRED_READ,
               Perms.NOTIFY,
             ],
           });
@@ -72,9 +72,9 @@ class PeopleProAccessory {
               1 * 3600, 2 * 3600, 3 * 3600, 5 * 3600, 10 * 3600, 12 * 3600, 15 * 3600,
             ],
             perms: [
-              Perms.READ,
+              Perms.PAIRED_READ,
               Perms.NOTIFY,
-              Perms.WRITE,
+              Perms.PAIRED_WRITE,
             ],
           });
         }
@@ -89,9 +89,9 @@ class PeopleProAccessory {
             maxValue: 7,
             validValues: [0, 4, 7],
             perms: [
-              Perms.READ,
+              Perms.PAIRED_READ,
               Perms.NOTIFY,
-              Perms.WRITE,
+              Perms.PAIRED_WRITE,
             ],
           });
         }
