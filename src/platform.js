@@ -1,6 +1,7 @@
-const storage = require('node-persist');
 const http = require('http');
 const url = require('url');
+
+const storage = require('./storage');
 
 const PeopleProAccessory = require('./accessory');
 const PeopleProAllAccessory = require('./all_accessory');
@@ -17,6 +18,15 @@ class PeopleProPlatform {
     this.anyoneSensorName = config.anyoneSensorName || 'Anyone';
     this.nooneSensorName = config.nooneSensorName || 'No One';
     this.webhookPort = config.webhookPort || 51828;
+    if (
+      typeof this.webhookPort !== 'number'
+      || !Number.isInteger(this.webhookPort)
+      || this.webhookPort < 1
+      || this.webhookPort > 65535
+    ) {
+      this.log(`Webhook port "${this.webhookPort}" is invalid. Defaulting to 51828.`);
+      this.webhookPort = 51828;
+    }
     this.webhookEnabled = ((typeof (config.webhookEnabled) !== 'undefined' && config.webhookEnabled !== null) ? config.webhookEnabled : false);
     this.webhookToken = config.webhookToken || null;
     this.pingInterval = config.pingInterval || 10000;
@@ -33,9 +43,14 @@ class PeopleProPlatform {
 
     // Get all people / targets and add them to accessories
     for (let i = 0; i < this.people.length; i += 1) {
-      const peopleProAccessory = new PeopleProAccessory(this.log, this.people[i], this);
-      this.accessories.push(peopleProAccessory);
-      this.peopleProAccessories.push(peopleProAccessory);
+      try {
+        const peopleProAccessory = new PeopleProAccessory(this.log, this.people[i], this);
+        this.accessories.push(peopleProAccessory);
+        this.peopleProAccessories.push(peopleProAccessory);
+      } catch (e) {
+        const personName = (this.people[i] && this.people[i].name) || `#${i}`;
+        this.log(`Failed to set up sensor "${personName}", skipping it: ${e.message}`);
+      }
     }
 
     // Add "anyone" and "no one" sensors / accessories

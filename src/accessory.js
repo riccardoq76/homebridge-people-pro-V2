@@ -32,8 +32,19 @@ class PeopleProAccessory {
     } else this.customDns = false;
     this.excludeFromWebhook = config.excludeFromWebhook || false;
     this.platform = platform;
+
     this.threshold = config.threshold || this.platform.threshold;
+    if (typeof this.threshold !== 'number' || !Number.isFinite(this.threshold) || this.threshold <= 0) {
+      log(`Threshold "${this.threshold}" for sensor ${config.name} is invalid. Defaulting to 15.`);
+      this.threshold = 15;
+    }
+
     this.pingInterval = config.pingInterval || this.platform.pingInterval;
+    if (typeof this.pingInterval !== 'number' || !Number.isFinite(this.pingInterval) || this.pingInterval <= 0) {
+      log(`Ping interval "${this.pingInterval}" for sensor ${config.name} is invalid. Defaulting to 10000.`);
+      this.pingInterval = 10000;
+    }
+
     this.stateCache = false;
     this.pingUseArp = ((typeof (config.pingUseArp) !== 'undefined' && config.pingUseArp !== null) ? config.pingUseArp : false);
 

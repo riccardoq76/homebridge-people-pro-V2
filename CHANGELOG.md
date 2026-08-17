@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0 (fork)
+- [Improvement] Removed the `node-persist` dependency (unmaintained since 2016). Replaced with a small custom JSON-file-backed storage module (`src/storage.js`) exposing the same `initSync`/`getItemSync`/`setItemSync` API, so `platform.js`/`accessory.js` needed no other changes. **Note:** the storage format changed, so after updating, sensors will show "not home" until the first ping/webhook repopulates their state (a few seconds to minutes, depending on `pingInterval`).
+- [Improvement] Added config validation: invalid `threshold`/`pingInterval` values on a sensor (non-numeric, zero, negative) now log a warning and fall back to the default instead of silently producing broken behavior; same for an invalid `webhookPort` on the platform.
+- [Bug] A misconfigured single sensor in the `people` list no longer prevents all other sensors from loading - errors during a single sensor's setup are now caught and logged, and the rest of the accessories still load normally.
+- [Improvement] Added automated tests (Jest) for the pure state/threshold logic in `src/accessory.js` and for the new `src/storage.js`, plus a GitHub Actions CI workflow (`.github/workflows/ci.yml`) running on Node 22.x/24.x for every push and pull request.
+- [Fix] Regenerated `package-lock.json`: it previously pinned the `local-devices` dependency to a `git+ssh://github.com/mfkrause/local-devices.git` URL, which fails `npm install` in any environment without SSH access configured for that specific fork (including CI). It now resolves normally from the npm registry.
+
 ## 0.13.0 (fork)
 - [Bug] Fixed a real reliability issue in `pingFunction()` (`src/accessory.js`): if a MAC-address target could not be found on the network, or a custom DNS lookup failed, the polling loop would silently stop forever for that sensor instead of retrying on the next cycle. The loop is now wrapped in `try`/`finally` so the next check is always scheduled, no matter how the current one ends.
 - [Bug] Fixed `e.getMessage()` (not a real method on JS `Error` objects) in the custom DNS error handler; it now correctly logs `e.message`.
