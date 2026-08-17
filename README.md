@@ -6,7 +6,7 @@
 
 # homebridge-people-pro
 
-[![github](https://img.shields.io/github/last-commit/riccardoq76/homebridge-people-pro)](https://www.github.com/riccardoq76/homebridge-people-pro)
+[![github](https://img.shields.io/github/last-commit/riccardoq76/homebridge-people-pro-V2)](https://www.github.com/riccardoq76/homebridge-people-pro-V2)
 
 </span>
 
@@ -21,20 +21,20 @@ It can also optionally spin up a webserver and receive webhooks sent by location
 # Installation
 
 1.  Install homebridge (if not already installed) using: `npm install -g homebridge`
-2.  Install this fork directly from GitHub using: `npm install -g github:riccardoq76/homebridge-people-pro`
+2.  Install this fork directly from GitHub using: `npm install -g github:riccardoq76/homebridge-people-pro-V2`
     (this plugin is not published on npm, so `npm install -g homebridge-people-pro` would install the original, unmaintained package instead of this fork)
 3.  Update your configuration file (see below).
 
 **Note for my own Raspberry Pi setup:** on my instance, Homebridge (via Homebridge Config UI X / hb-service) manages plugins in its own storage directory rather than the system-wide global npm prefix. There, the working install/update command is instead (run over SSH on the Pi, as the `pi` user, no `-g`):
 
 ```
-npm install --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro
+npm install --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro-V2
 ```
 
 If that fails with a permissions error, fall back to:
 
 ```
-sudo npm install --unsafe-perm --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro
+sudo npm install --unsafe-perm --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro-V2
 ```
 
 Then restart Homebridge (UI, or `sudo hb-service restart`).
