@@ -27,6 +27,11 @@ const PeopleProAccessory = require('../src/accessory');
 function makeAccessory(props, storageData = {}) {
   const accessory = Object.create(PeopleProAccessory.prototype);
   Object.assign(accessory, props);
+  // Mirror the constructor's default: if no explicit `targets` list is given, it's just the
+  // single primary `target` (like most existing tests, which predate multi-target support).
+  if (!accessory.targets) {
+    accessory.targets = [accessory.target];
+  }
   accessory.platform = {
     storage: {
       getItemSync: (key) => storageData[key],
@@ -109,6 +114,53 @@ describe('webhookIsOutdated', () => {
   });
 });
 
+describe('isActive with multiple targets (OR logic)', () => {
+  const primaryTarget = '192.168.1.50';
+  const secondaryTarget = '192.168.1.51';
+  const targets = [primaryTarget, secondaryTarget];
+
+  test('none of the targets ever seen: not active', () => {
+    const accessory = makeAccessory({ target: primaryTarget, targets, threshold: 15 });
+    expect(accessory.isActive()).toBe(false);
+  });
+
+  test('only the secondary target was seen recently: active', () => {
+    const accessory = makeAccessory({ target: primaryTarget, targets, threshold: 15 }, {
+      [`lastSuccessfulPing_${secondaryTarget}`]: Date.now() - (5 * 60 * 1000),
+    });
+    expect(accessory.isActive()).toBe(true);
+  });
+
+  test('both targets seen but expired: not active', () => {
+    const accessory = makeAccessory({ target: primaryTarget, targets, threshold: 15 }, {
+      [`lastSuccessfulPing_${primaryTarget}`]: Date.now() - (30 * 60 * 1000),
+      [`lastSuccessfulPing_${secondaryTarget}`]: Date.now() - (45 * 60 * 1000),
+    });
+    expect(accessory.isActive()).toBe(false);
+  });
+});
+
+describe('getLastSuccessfulPingAcrossTargets', () => {
+  const primaryTarget = '192.168.1.50';
+  const secondaryTarget = '192.168.1.51';
+  const targets = [primaryTarget, secondaryTarget];
+
+  test('no data for any target: returns 0', () => {
+    const accessory = makeAccessory({ target: primaryTarget, targets });
+    expect(accessory.getLastSuccessfulPingAcrossTargets()).toBe(0);
+  });
+
+  test('returns the most recent timestamp among all targets', () => {
+    const older = Date.now() - 10000;
+    const newer = Date.now();
+    const accessory = makeAccessory({ target: primaryTarget, targets }, {
+      [`lastSuccessfulPing_${primaryTarget}`]: older,
+      [`lastSuccessfulPing_${secondaryTarget}`]: newer,
+    });
+    expect(accessory.getLastSuccessfulPingAcrossTargets()).toBe(newer);
+  });
+});
+
 describe('successfulPingOccurredAfterWebhook', () => {
   const target = '192.168.1.50';
 
@@ -140,5 +192,18 @@ describe('successfulPingOccurredAfterWebhook', () => {
       [`lastWebhook_${target}`]: now,
     });
     expect(accessory.successfulPingOccurredAfterWebhook()).toBe(false);
+  });
+
+  test('multi-target: uses the most recent ping among all targets, not just the primary one', () => {
+    const secondaryTarget = '192.168.1.51';
+    const now = Date.now();
+    const accessory = makeAccessory({
+      target, targets: [target, secondaryTarget], threshold: 15,
+    }, {
+      [`lastWebhook_${target}`]: now - 10000,
+      [`lastSuccessfulPing_${target}`]: now - 20000, // primary target ping is older than webhook
+      [`lastSuccessfulPing_${secondaryTarget}`]: now, // secondary target ping is newer than webhook
+    });
+    expect(accessory.successfulPingOccurredAfterWebhook()).toBe(true);
   });
 });

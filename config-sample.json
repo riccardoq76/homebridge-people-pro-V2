@@ -11,6 +11,9 @@
         {
             "name": "Max",
             "target": "Max-iPhone",
+            "additionalTargets": [
+                "Max-AppleWatch"
+            ],
             "customDns": [
                 "8.8.8.8",
                 "8.8.4.4"

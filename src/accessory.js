@@ -24,6 +24,23 @@ class PeopleProAccessory {
       log(`No target was given for ${config.name}. Defaulting to "127.0.0.1".`);
       this.target = '127.0.0.1';
     }
+
+    // A person often carries more than one device (phone + smartwatch, two phones, etc.).
+    // `target` stays the single "primary" device for backward compatibility with existing
+    // storage keys and webhook behavior; `additionalTargets` (optional) lists any other devices
+    // for the same person. `this.targets` is the full list this sensor checks - active if ANY
+    // of them was seen recently (see isActive()/pingFunction()).
+    this.targets = [this.target];
+    if (Array.isArray(config.additionalTargets)) {
+      config.additionalTargets
+        .filter((additionalTarget) => typeof additionalTarget === 'string' && additionalTarget.trim() !== '')
+        .forEach((additionalTarget) => {
+          if (!this.targets.includes(additionalTarget)) {
+            this.targets.push(additionalTarget);
+          }
+        });
+    }
+
     if (config.enableCustomDns !== false) {
       this.customDns = config.customDns || false;
       if (typeof this.customDns !== 'boolean' && !Array.isArray(this.customDns)) {
@@ -187,17 +204,30 @@ class PeopleProAccessory {
   }
 
   /**
-   * Gets the date of the last activation / successful ping of this sensor
+   * Gets the date of the last activation / successful ping of this sensor, across all of its
+   * targets
    * @param {function} callback The function to callback with the last activation time
    */
   getLastActivation(callback) {
-    const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
+    const lastSeenUnix = this.getLastSuccessfulPingAcrossTargets();
     if (lastSeenUnix) {
       const lastSeenSeconds = Math.floor(lastSeenUnix / 1000);
       callback(null, lastSeenSeconds - this.historyService.getInitialTime());
     } else {
       callback(null, 0);
     }
+  }
+
+  /**
+   * Gets the most recent "last successful ping" timestamp across all of this sensor's targets
+   * @returns {number} The most recent timestamp (ms since epoch), or 0 if none of the targets
+   * have ever been seen
+   */
+  getLastSuccessfulPingAcrossTargets() {
+    return this.targets.reduce((mostRecent, target) => {
+      const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${target}`) || 0;
+      return Math.max(mostRecent, lastSeenUnix);
+    }, 0);
   }
 
   /**
@@ -218,17 +248,16 @@ class PeopleProAccessory {
   }
 
   /**
-   * Checks if the target of this accessory/sensor is currently active based on last successful ping
-   * and configured threshold
-   * @returns {bool} True if the target is currently active, false if not
+   * Checks if this accessory/sensor is currently active: true if ANY of its targets was seen
+   * within the configured threshold (a person is "home" if any one of their devices is).
+   * @returns {bool} True if the sensor is currently active, false if not
   */
   isActive() {
-    const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
-    if (lastSeenUnix) {
-      const activeThreshold = Date.now() - (this.threshold * 60 * 1000);
-      return lastSeenUnix > activeThreshold;
-    }
-    return false;
+    const activeThreshold = Date.now() - (this.threshold * 60 * 1000);
+    return this.targets.some((target) => {
+      const lastSeenUnix = this.platform.storage.getItemSync(`lastSuccessfulPing_${target}`);
+      return !!lastSeenUnix && lastSeenUnix > activeThreshold;
+    });
   }
 
   /**
@@ -283,9 +312,56 @@ class PeopleProAccessory {
   }
 
   /**
-   * Pings or, if configured, ARP lookups the target of this accessory/sensor and updated the state
-   * accordingly. Gets called on a regular basis through an interval at the configured interval
-   * time. If configured, looks up the given target hostname on a custom DNS server first.
+   * Pings or, if configured, ARP lookups a single target and, if it responds, records a
+   * successful ping for it. Each target is checked independently and errors are caught here
+   * (not propagated) so that one target failing to resolve doesn't stop the other targets of
+   * the same sensor from being checked.
+   * @param {string} target The IP address, hostname or MAC address to check
+   */
+  async checkSingleTarget(target) {
+    try {
+      let currentTarget = false;
+      if (MAC_REGEX.test(target)) {
+        // Target is MAC address - get IP first from arp
+        const devices = await find();
+        for (let i = 0; i < devices.length; i += 1) {
+          if (devices[i].mac.toLowerCase() === target.toLowerCase()) {
+            currentTarget = devices[i].ip;
+            break;
+          }
+        }
+      } else currentTarget = target;
+
+      if (currentTarget === false) {
+        this.log(`Could not resolve MAC address ${target} to an IP on the network; will retry next cycle.`);
+        return;
+      }
+
+      if (this.customDns !== false) {
+        try {
+          currentTarget = await this.resolveWithCustomDns(currentTarget);
+        } catch (e) {
+          this.log(`Error during DNS resolve using custom DNS server for ${target}: ${e.message}`);
+          return;
+        }
+      }
+
+      const state = this.pingUseArp
+        ? await this.checkArp(currentTarget)
+        : await this.checkPing(currentTarget);
+
+      if (state) {
+        this.platform.storage.setItemSync(`lastSuccessfulPing_${target}`, Date.now());
+      }
+    } catch (e) {
+      this.log(`Unexpected error while checking status for ${target}: ${e.message}`);
+    }
+  }
+
+  /**
+   * Pings or, if configured, ARP lookups every target of this accessory/sensor (in parallel) and
+   * updates the sensor's state accordingly. Gets called on a regular basis through an interval at
+   * the configured interval time. If configured, looks up hostnames on a custom DNS server first.
    *
    * Regardless of how this run finishes (success, expected early exit, or unexpected error), the
    * `finally` block always schedules the next run - a sensor must never permanently stop polling
@@ -294,48 +370,15 @@ class PeopleProAccessory {
   async pingFunction() {
     try {
       if (this.webhookIsOutdated()) {
-        let currentTarget = false;
-        if (MAC_REGEX.test(this.target)) {
-          // Target is MAC address - get IP first from arp
-          const devices = await find();
-          for (const device of devices) {
-            if (device.mac.toLowerCase() === this.target.toLowerCase()) {
-              currentTarget = device.ip;
-              break;
-            }
-          }
-        } else currentTarget = this.target;
+        await Promise.all(this.targets.map((target) => this.checkSingleTarget(target)));
 
-        if (currentTarget === false) {
-          this.log(`Could not resolve MAC address ${this.target} to an IP on the network; will retry next cycle.`);
-          return;
-        }
-
-        if (this.customDns !== false) {
-          try {
-            currentTarget = await this.resolveWithCustomDns(currentTarget);
-          } catch (e) {
-            this.log(`Error during DNS resolve using custom DNS server: ${e.message}`);
-            return;
-          }
-        }
-
-        const state = this.pingUseArp
-          ? await this.checkArp(currentTarget)
-          : await this.checkPing(currentTarget);
-
-        if (this.webhookIsOutdated()) {
-          if (state) {
-            this.platform.storage.setItemSync(`lastSuccessfulPing_${this.target}`, Date.now());
-          }
-          if (this.successfulPingOccurredAfterWebhook()) {
-            const newState = this.isActive();
-            this.setNewState(newState);
-          }
+        if (this.webhookIsOutdated() && this.successfulPingOccurredAfterWebhook()) {
+          const newState = this.isActive();
+          this.setNewState(newState);
         }
       }
     } catch (e) {
-      this.log(`Unexpected error while checking status for ${this.target}: ${e.message}`);
+      this.log(`Unexpected error while checking status for ${this.name}: ${e.message}`);
     } finally {
       setTimeout(this.pingFunction.bind(this), this.pingInterval);
     }
@@ -355,12 +398,12 @@ class PeopleProAccessory {
   }
 
   /**
-   * Checks if the last successful ping occured after the last webhook
+   * Checks if the most recent successful ping (across all targets) occured after the last webhook
    * @returns {bool} True if the last successful ping occured after the last webhook, false if
    * it did not
    */
   successfulPingOccurredAfterWebhook() {
-    const lastSuccessfulPing = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
+    const lastSuccessfulPing = this.getLastSuccessfulPingAcrossTargets();
     if (!lastSuccessfulPing) {
       return false;
     }
@@ -397,7 +440,7 @@ class PeopleProAccessory {
 
       let lastSuccessfulPingFormatted = 'none';
       let lastWebhookFormatted = 'none';
-      const lastSuccessfulPing = this.platform.storage.getItemSync(`lastSuccessfulPing_${this.target}`);
+      const lastSuccessfulPing = this.getLastSuccessfulPingAcrossTargets();
       if (lastSuccessfulPing) {
         lastSuccessfulPingFormatted = new Date(lastSuccessfulPing).toISOString();
       }
@@ -412,10 +455,11 @@ class PeopleProAccessory {
           status: (newState) ? 1 : 0,
         });
       }
+      const targetsLabel = this.targets.join(', ');
       if (this.pingUseArp) {
-        this.log('Changed occupancy state for %s to %s. Last successful arp lookup %s , last webhook %s .', this.target, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
+        this.log('Changed occupancy state for %s to %s. Last successful arp lookup %s , last webhook %s .', targetsLabel, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
       } else {
-        this.log('Changed occupancy state for %s to %s. Last successful ping %s , last webhook %s .', this.target, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
+        this.log('Changed occupancy state for %s to %s. Last successful ping %s , last webhook %s .', targetsLabel, newState, lastSuccessfulPingFormatted, lastWebhookFormatted);
       }
     }
   }
