@@ -4,8 +4,10 @@
 
 <span align="center">
 
-# homebridge-people-pro
+# homebridge-people-pro V2
 
+[![npm version](https://img.shields.io/npm/v/@riccardoq76/homebridge-people-pro.svg)](https://www.npmjs.com/package/@riccardoq76/homebridge-people-pro)
+[![npm downloads](https://img.shields.io/npm/dt/@riccardoq76/homebridge-people-pro.svg)](https://www.npmjs.com/package/@riccardoq76/homebridge-people-pro)
 [![github](https://img.shields.io/github/last-commit/riccardoq76/homebridge-people-pro-V2)](https://www.github.com/riccardoq76/homebridge-people-pro-V2)
 [![CI](https://github.com/riccardoq76/homebridge-people-pro-V2/actions/workflows/ci.yml/badge.svg)](https://github.com/riccardoq76/homebridge-people-pro-V2/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
