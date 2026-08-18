@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.15.2 (fork)
+- [Bug] `index.js` still called `registerPlatform`/`registerAccessory` with the old unscoped identifier `'homebridge-people-pro'`, left over from before the npm rename. Homebridge now expects the full scoped name (`@riccardoq76/homebridge-people-pro`) and was logging "tried to register with an incorrect plugin identifier" on every startup. The plugin kept working despite the warning, but it's now fixed to match.
+
 ## 0.15.1 (fork)
 - [Docs/Metadata] Published on npm as `@riccardoq76/homebridge-people-pro`. Updated `package.json`'s `funding` field, which still pointed to the original author - it now points to the fork's own maintainer.
 

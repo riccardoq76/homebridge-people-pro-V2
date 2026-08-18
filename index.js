@@ -19,7 +19,7 @@ module.exports = (homebridge) => {
 
   PeopleProPlatform.setHomebridge(homebridge);
 
-  homebridge.registerPlatform('homebridge-people-pro', 'PeoplePro', PeopleProPlatform);
-  homebridge.registerAccessory('homebridge-people-pro', 'PeopleProAccessory', PeopleProAccessory);
-  homebridge.registerAccessory('homebridge-people-pro', 'PeopleProAllAccessory', PeopleProAllAccessory);
+  homebridge.registerPlatform('@riccardoq76/homebridge-people-pro', 'PeoplePro', PeopleProPlatform);
+  homebridge.registerAccessory('@riccardoq76/homebridge-people-pro', 'PeopleProAccessory', PeopleProAccessory);
+  homebridge.registerAccessory('@riccardoq76/homebridge-people-pro', 'PeopleProAllAccessory', PeopleProAllAccessory);
 };

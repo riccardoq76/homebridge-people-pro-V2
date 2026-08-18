@@ -119,3 +119,22 @@ Prima di implementarlo: verificare sulla documentazione ufficiale (`https://deve
 5. Verificare su `npmjs.com/package/@riccardoq76/homebridge-people-pro` che sia visibile.
 
 **Da ricordare per il futuro:** da qui in avanti, ogni release richiede anche `npm version patch|minor|major` + `npm publish`, non solo `git push` — un passo manuale in più da non dimenticare.
+
+---
+
+## Idea in sospeso — rinominare il pacchetto npm in `-v2`
+
+Valutato il 18/08/2026, rimandato: non è un semplice bump di versione, è un rename vero e proprio. Da riprendere in futuro se interessa ancora, non come parte di una release ordinaria.
+
+**Cosa comporta, se si decide di farlo:**
+1. `package.json`: `"name"` → `@riccardoq76/homebridge-people-pro-v2`.
+2. **`index.js` — passo critico, facile da dimenticare:** Homebridge deriva il "nome plugin" interno dal `name` di `package.json` (togliendo lo scope `@riccardoq76/`). Le tre chiamate `homebridge.registerPlatform('homebridge-people-pro', ...)` / `registerAccessory('homebridge-people-pro', ...)` (righe 22-24) usano quella stringa hardcoded per farsi riconoscere da Homebridge. Se il nome del pacchetto cambia ma queste tre righe no, il plugin smette di caricarsi. Vanno aggiornate insieme, nella stessa modifica.
+3. Il secondo argomento di `registerPlatform` (`'PeoplePro'`) NON cambia — è quello che identifica la piattaforma nel `config.json` (`"platform": "PeoplePro"`), quindi la config esistente resta valida senza modifiche.
+4. Aggiornare comando di installazione e badge in `README.md`.
+5. `npm publish --access public` (di nuovo prima volta, essendo un pacchetto scoped nuovo).
+6. `npm deprecate @riccardoq76/homebridge-people-pro "renamed to @riccardoq76/homebridge-people-pro-v2"` per non lasciare il vecchio nome orfano.
+7. Aggiornare il comando di installazione sul Pi.
+
+Nessun rischio di nome già occupato: essendo sotto lo scope `@riccardoq76`, il nome è comunque disponibile a prescindere da terzi.
+
+**Nota:** finché il pacchetto ha pochissima o nessuna adozione esterna, il costo di questo rename resta basso — conviene farlo prima piuttosto che dopo, se si decide di farlo.
