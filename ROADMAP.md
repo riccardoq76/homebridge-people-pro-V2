@@ -105,18 +105,17 @@ Prima di implementarlo: verificare sulla documentazione ufficiale (`https://deve
 
 ---
 
-## Ultimo — Pubblicare su npm per renderlo disponibile ad altri (decisione da confermare)
+## Pubblicare su npm per renderlo disponibile ad altri — DECISO, IN CORSO
 
-**Stato attuale (verificato):** il repo GitHub è già pubblico, chiunque può installarlo con `npm install -g github:riccardoq76/homebridge-people-pro`. Su **npm** invece non c'è nulla sotto il nome di Riccardo — `@riccardoq76/homebridge-people-pro` non esiste nel registro. L'unico `homebridge-people-pro` pubblicato resta quello originale di mfkrause, fermo alla 0.11.6, che punta al repo archiviato. Risultato pratico: oggi il fork è trovabile solo da chi sa già cercarlo su GitHub, non da chi cerca dentro la UI di Homebridge o su npmjs.com.
+**Decisione presa:** procedere con la pubblicazione. `package.json` è già stato aggiornato con `"name": "@riccardoq76/homebridge-people-pro"` (il nome senza scope è occupato dal pacchetto originale di mfkrause, non riutilizzabile).
 
-**Perché potrebbe avere senso:** il plugin originale ha 42 stelle ed è stato abbandonato dall'autore con un invito esplicito a farne fork. C'è quindi una platea reale di persone che probabilmente lo usano ancora e si scontreranno con lo stesso identico crash di partenza (`fakegato-history` + Homebridge v2) appena aggiornano. Il lavoro fatto in questo fork non è un cerotto: bug di affidabilità veri risolti (loop di ping che si bloccava per sempre), un problema di sicurezza vero risolto (webhook senza autenticazione), oltre alla compatibilità v2. È materiale che vale la pena condividere. La licenza è MIT, quindi non c'è alcun ostacolo legale a ripubblicarlo sotto un nome diverso.
+**Stato prima della decisione (verificato):** il repo GitHub era già pubblico, installabile con `npm install -g github:riccardoq76/homebridge-people-pro`. Su npm non c'era nulla sotto il nome di Riccardo. L'unico `homebridge-people-pro` pubblicato restava quello originale di mfkrause, fermo alla 0.11.6, che punta al repo archiviato.
 
-**L'unico vero costo:** pubblicare per altri non è un'azione singola, è un impegno che continua nel tempo — issue di sconosciuti, richieste di funzionalità, domande su setup di rete diversi dal proprio. Piccolo se il progetto resta di nicchia, ma reale.
+**Passi rimanenti (da fare da terminale, non automatizzabili da qui):**
+1. ~~Cambiare `"name"` in `package.json`~~ — fatto.
+2. Commit + push del cambio di nome (e di tutto il lavoro Fase 4 in sospeso, se non già fatto).
+3. `npm login` da terminale (richiede autenticazione a due fattori).
+4. `npm publish --access public` dalla cartella del progetto (il flag è obbligatorio la prima volta per un pacchetto scoped).
+5. Verificare su `npmjs.com/package/@riccardoq76/homebridge-people-pro` che sia visibile.
 
-**Se si decide di procedere, i passi sono:**
-1. Cambiare `"name"` in `package.json` da `homebridge-people-pro` a `@riccardoq76/homebridge-people-pro` (il nome senza scope è già occupato dal pacchetto originale, non riutilizzabile).
-2. `npm login` da terminale (richiede autenticazione a due fattori).
-3. `npm publish --access public` dalla cartella del progetto (il flag è obbligatorio la prima volta per un pacchetto scoped, altrimenti npm lo pubblica privato).
-4. Da lì in avanti, ogni release futura richiede `npm version patch|minor|major` + `npm publish` di nuovo — un passo manuale in più oltre al solito `git push`, da non dimenticare.
-
-**Non ancora deciso se farlo.** Riprendere questa sezione quando si è pronti a scegliere.
+**Da ricordare per il futuro:** da qui in avanti, ogni release richiede anche `npm version patch|minor|major` + `npm publish`, non solo `git push` — un passo manuale in più da non dimenticare.

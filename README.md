@@ -13,7 +13,7 @@
 </span>
 
 > [!NOTE]
-> This is a personal fork of [mfkrause/homebridge-people-pro](https://github.com/mfkrause/homebridge-people-pro), which the original author archived after moving away from Homebridge. This fork applies the minimal changes needed to keep the plugin working on Homebridge v2 (see [CHANGELOG.md](CHANGELOG.md)). It is not published to npm; install it directly from this repository (see Installation below).
+> This is a fork of [mfkrause/homebridge-people-pro](https://github.com/mfkrause/homebridge-people-pro), which the original author archived after moving away from Homebridge. On top of restoring Homebridge v2 compatibility, this fork fixes several real reliability and security issues, and adds multi-target and optional router-based presence detection (see [CHANGELOG.md](CHANGELOG.md)). It's published on npm as `@riccardoq76/homebridge-people-pro` - the original, unmaintained `homebridge-people-pro` package is a different, older codebase.
 
 This is a plugin for [homebridge](https://github.com/homebridge/homebridge). It monitors who is at home, based on their smartphone being seen on the network recently.
 If you use the Elgato Eve app you can also see the history of every person sensor (powered by [fakegato](https://github.com/simont77/fakegato-history]) - only works for sensors configured as "motion" sensors).
@@ -23,11 +23,12 @@ It can also optionally spin up a webserver and receive webhooks sent by location
 # Installation
 
 1.  Install homebridge (if not already installed) using: `npm install -g homebridge`
-2.  Install this fork directly from GitHub using: `npm install -g github:riccardoq76/homebridge-people-pro-V2`
-    (this plugin is not published on npm, so `npm install -g homebridge-people-pro` would install the original, unmaintained package instead of this fork)
+2.  Install this plugin, either:
+    -   from npm (recommended for most users - matches the Homebridge UI's plugin search and "update available" indicator): `npm install -g @riccardoq76/homebridge-people-pro`
+    -   or directly from GitHub, to get changes that haven't been formally released to npm yet: `npm install -g github:riccardoq76/homebridge-people-pro-V2`
 3.  Update your configuration file (see below).
 
-**Note for my own Raspberry Pi setup:** on my instance, Homebridge (via Homebridge Config UI X / hb-service) manages plugins in its own storage directory rather than the system-wide global npm prefix. There, the working install/update command is instead (run over SSH on the Pi, as the `pi` user, no `-g`):
+**Note for my own Raspberry Pi setup:** on my instance, Homebridge (via Homebridge Config UI X / hb-service) manages plugins in its own storage directory rather than the system-wide global npm prefix, and I install directly from GitHub (see above) to get fixes before they're formally versioned and published to npm. There, the working install/update command is instead (run over SSH on the Pi, as the `pi` user, no `-g`):
 
 ```
 npm install --prefix /var/lib/homebridge github:riccardoq76/homebridge-people-pro-V2
@@ -41,7 +42,7 @@ sudo npm install --unsafe-perm --prefix /var/lib/homebridge github:riccardoq76/h
 
 Then restart Homebridge (UI, or `sudo hb-service restart`).
 
-**Important:** because this plugin is installed from GitHub and not from npm, the Homebridge UI's "update available" indicator will never trigger for it - it only compares against the original, abandoned `homebridge-people-pro` package on npm (still at 0.11.6). Updates always have to be applied manually with the command above after pulling the latest changes into this fork.
+**Note on updates:** if you installed from npm (`@riccardoq76/homebridge-people-pro`), the Homebridge UI's "update available" indicator works normally. If you installed directly from GitHub instead, it won't trigger - GitHub installs always have to be updated manually with the command above.
 
 # Configuration
 
