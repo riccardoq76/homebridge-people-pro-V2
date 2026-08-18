@@ -7,6 +7,13 @@
     "webhookPort": 51828,
     "webhookEnabled": true,
     "webhookToken": "change-me-to-a-long-random-string",
+    "routerDetection": {
+        "enabled": false,
+        "host": "192.168.1.1",
+        "username": "admin",
+        "password": "change-me",
+        "pollInterval": 30000
+    },
     "people": [
         {
             "name": "Max",

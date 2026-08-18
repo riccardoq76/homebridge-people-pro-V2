@@ -6,6 +6,8 @@ const storage = require('./storage');
 const PeopleProAccessory = require('./accessory');
 const PeopleProAllAccessory = require('./all_accessory');
 
+const MAC_REGEX = /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/;
+
 let homebridge;
 
 class PeopleProPlatform {
@@ -35,6 +37,23 @@ class PeopleProPlatform {
     this.storage = storage;
     this.storage.initSync({ dir: `${homebridge.user.storagePath()}/plugin-persist/homebridge-people-pro` });
     this.webhookQueue = [];
+
+    // Optional router-based detection (see src/router-detector.js). Disabled unless explicitly
+    // configured and valid - validated eagerly here so config mistakes are logged once at
+    // startup rather than repeatedly during polling.
+    this.routerDetectionConfig = null;
+    if (config.routerDetection && config.routerDetection.enabled === true) {
+      const rd = config.routerDetection;
+      if (typeof rd.host !== 'string' || rd.host.trim() === '') {
+        this.log('Router detection: "host" is required when routerDetection is enabled. Router detection disabled.');
+      } else if (typeof rd.username !== 'string' || rd.username.trim() === '') {
+        this.log('Router detection: "username" is required when routerDetection is enabled. Router detection disabled.');
+      } else if (!rd.password && !rd.privateKey) {
+        this.log('Router detection: either "password" or "privateKey" is required when routerDetection is enabled. Router detection disabled.');
+      } else {
+        this.routerDetectionConfig = rd;
+      }
+    }
   }
 
   accessories(callback) {
@@ -71,6 +90,25 @@ class PeopleProPlatform {
     // Start webhook server if enabled
     if (this.webhookEnabled) {
       this.startServer();
+    }
+
+    // Start router-based detection if enabled and valid (see constructor). Loaded lazily so the
+    // ssh2 dependency is only pulled in when actually used.
+    if (this.routerDetectionConfig) {
+      // eslint-disable-next-line global-require
+      const RouterDetector = require('./router-detector');
+      this.routerDetector = new RouterDetector(this.log, this.routerDetectionConfig, this.storage);
+
+      const macTargets = [];
+      this.peopleProAccessories.forEach((peopleProAccessory) => {
+        peopleProAccessory.targets.forEach((target) => {
+          if (MAC_REGEX.test(target) && !macTargets.includes(target)) {
+            macTargets.push(target);
+          }
+        });
+      });
+      this.routerDetector.setTargets(macTargets);
+      this.routerDetector.start();
     }
   }
 

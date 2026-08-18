@@ -107,6 +107,70 @@
                     "functionBody": "return model.webhookEnabled === true;"
                 }
             },
+            "routerDetection": {
+                "type": "object",
+                "title": "Router-based detection (optional, advanced)",
+                "required": false,
+                "description": "Experimental: ask an Asuswrt/Asuswrt-Merlin router directly (over SSH) which devices are currently connected, instead of relying only on ping/ARP. More reliable for devices that go quiet to save battery, but requires enabling SSH on your router. Disabled by default; nothing changes unless you enable it.",
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enable router-based detection",
+                        "required": false,
+                        "placeholder": false
+                    },
+                    "host": {
+                        "type": "string",
+                        "title": "Router IP address",
+                        "required": true,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    },
+                    "port": {
+                        "type": "integer",
+                        "title": "SSH port",
+                        "required": false,
+                        "placeholder": 22,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "SSH username",
+                        "required": true,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    },
+                    "password": {
+                        "type": "string",
+                        "title": "SSH password (use a private key below instead if possible)",
+                        "required": false,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    },
+                    "privateKey": {
+                        "type": "string",
+                        "title": "SSH private key (paste the full contents, recommended over a password)",
+                        "required": false,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    },
+                    "pollInterval": {
+                        "type": "integer",
+                        "title": "Poll interval (ms)",
+                        "required": false,
+                        "placeholder": 30000,
+                        "condition": {
+                            "functionBody": "return model.routerDetection && model.routerDetection.enabled === true;"
+                        }
+                    }
+                }
+            },
             "people": {
                 "type": "array",
                 "title": "People / Sensors",

@@ -7,6 +7,8 @@
 # homebridge-people-pro
 
 [![github](https://img.shields.io/github/last-commit/riccardoq76/homebridge-people-pro-V2)](https://www.github.com/riccardoq76/homebridge-people-pro-V2)
+[![CI](https://github.com/riccardoq76/homebridge-people-pro-V2/actions/workflows/ci.yml/badge.svg)](https://github.com/riccardoq76/homebridge-people-pro-V2/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </span>
 
@@ -58,6 +60,7 @@ See `config-sample.json` for an example configuration. This plugin can also be c
 | `webhookEnabled`           | optional, default: false, enable webhook functionality / webserver                                                                                                                                  |
 | `webhookPort`              | optional, default: 51828                                                                                                                                                                            |
 | `webhookToken`             | optional, default: none. **Strongly recommended if `webhookEnabled` is true.** If set, every webhook request must include a matching `token` query parameter, or it is rejected. Without it, anyone who can reach the webhook port can spoof presence for your sensors. |
+| `routerDetection`          | optional, default: disabled. Ask your router directly which devices are connected, instead of only ping/ARP. See "Router-based detection" below.                                                   |
 | `people`                   | array of objects of the sensors / people to set-up, see below for configuration of every sensor                                                                                                     |
 
 ## Sensors / People Configuration
@@ -105,6 +108,47 @@ Apps like [Locative](https://my.locative.io) range for iBeacons and geofences by
 To use this plugin with one of these apps, configure your region and set the HTTP push to `http://[ipaddress]:[port]/?sensor=[name]&state=true` for arrival, and `http://[ipaddress]:[port]/?sensor=[name]&state=false` for departure, where `[ipaddress]` is the IP address of your Homebridge, `[port]` the configured port for the webhooks (defaults to 51828) and `[name]` the name of the person the device belongs to as specified in your config under `people`. *Note:* You may need to enable port forwarding on your router to accomplish this.
 
 If you have set `webhookToken` in your config (recommended), append `&token=[token]` to both URLs, e.g. `http://[ipaddress]:[port]/?sensor=[name]&state=true&token=[token]`. Requests without a matching token are rejected. This matters especially if you have port-forwarded the webhook port to the internet for Locative to reach it while you're away from home - without a token, anyone who finds that port can fake your presence at home.
+
+## Router-based detection (optional, advanced)
+
+> [!NOTE]
+> This feature is experimental and currently verified against Asuswrt/Asuswrt-Merlin routers only (developed and tested against an Asus RT-AC68U). It's disabled by default and has zero effect unless you explicitly enable it.
+
+Ping and ARP only work if a device responds - phones and watches often go quiet (Wi-Fi off, aggressive power saving) while still being physically at home, which can cause false "away" readings. As an alternative, this plugin can ask the router itself which devices are currently connected over SSH, since the router always knows this immediately without needing the device to respond to anything.
+
+This only works for sensors whose `target` (or one of their `additionalTargets`, see above) is a **MAC address** - the router reports connected devices by MAC, not by hostname or IP.
+
+### Setup
+
+1.  On your router's web interface, go to Administration → System (or "Service" on some firmware versions) and enable SSH access.
+2.  Prefer key-based authentication over a password if your router supports it - see the security note below.
+3.  Add a `routerDetection` block to your Homebridge config:
+
+    ```json
+    "routerDetection": {
+        "enabled": true,
+        "host": "192.168.1.1",
+        "username": "admin",
+        "password": "your-router-ssh-password",
+        "pollInterval": 30000
+    }
+    ```
+
+    (Use `privateKey` instead of `password` if you're using key-based auth - paste the full private key contents.)
+
+4.  Restart Homebridge and check the logs for `Router detection:` lines to confirm it connected and found your watched MAC addresses.
+
+### Security note
+
+Enabling SSH on your router is a real change to your network's security posture, not just a plugin setting - it's worth thinking about independently of this plugin. Recommendations:
+
+-   Use a dedicated SSH key instead of your router's admin password where your firmware supports it.
+-   Don't expose the router's SSH port to the internet.
+-   The credentials you enter here are stored in Homebridge's `config.json`, in plain text, the same as `webhookToken` - anyone with access to that file has access to your router.
+
+### How it works internally
+
+This queries `/tmp/clientlist.json` on the router (the file Asuswrt/Asuswrt-Merlin itself maintains listing currently-associated Wi-Fi clients). The exact structure of that file can vary between firmware versions, so the plugin scans it for anything that looks like a MAC address rather than assuming one fixed shape. If your router's log output shows "found no MAC addresses" even though devices are connected, please open an issue with a sanitized sample of your router's `/tmp/clientlist.json` output so the parser can be adjusted.
 
 # Notes
 

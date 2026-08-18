@@ -19,7 +19,8 @@
     "fakegato-history": "^0.6.7",
     "local-devices": "^3.1.0",
     "node-arp": "^1.0.6",
-    "ping": "^0.1.10"
+    "ping": "^0.1.10",
+    "ssh2": "^1.17.0"
   },
   "scripts": {
     "test": "jest"
