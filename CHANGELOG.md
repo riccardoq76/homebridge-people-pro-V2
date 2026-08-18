@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.15.1 (fork)
+- [Docs/Metadata] Published on npm as `@riccardoq76/homebridge-people-pro`. Updated `package.json`'s `funding` field, which still pointed to the original author - it now points to the fork's own maintainer.
+
 ## 0.15.0 (fork)
 - [Feature] Added multi-target support per person: a new optional `additionalTargets` array can list extra devices belonging to the same person (e.g. a smartwatch in addition to a phone). The sensor is now considered active if **any** of `target` + `additionalTargets` was seen within `threshold` - useful since a single tracked device going quiet (low battery, aggressive power saving) no longer means the sensor wrongly reports "away". Fully backward compatible: sensors with only `target` set behave exactly as before. See `config-sample.json` and the README for an example.
 
